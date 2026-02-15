@@ -43,6 +43,54 @@ select, input {
     gap:20px;
 }
 
+.tables-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    height: auto;
+}
+
+.tables-grid > div {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    flex-wrap: wrap;
+}
+
+.controls > select {
+    padding: 8px 12px;
+    flex: 0 0 auto;
+}
+
+.controls > input {
+    padding: 8px 10px;
+    flex: 0 0 auto;
+}
+
+.controls > button {
+    padding: 8px 12px;
+    flex: 0 0 auto;
+}
+.divider {
+    width: 1px;
+    height: 30px;
+    background: var(--border);
+    flex: 0 0 auto;
+}
+
+.theme-btn {
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+
 .charts {
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -90,17 +138,4 @@ select, input {
     --bg2: #f6f8fa;
     --text: #24292f;
     --border: #d0d7de;
-}
-
-@media print {
-    body {
-        margin: 0;
-        padding: 10mm;
-    }
-    button {
-        display: none;
-    }
-    input, select {
-        display: none;
-    }
 }

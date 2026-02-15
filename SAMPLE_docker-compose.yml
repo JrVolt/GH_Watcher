@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  github-traffic:
+    image: jrvolt/gh_watcher:latest
+    container_name: GH_Watcher
+    ports:
+      - "8000:8000"
+    environment:
+      - GITHUB_TOKEN=YOUR_GITHUB_TOKEN_HERE
+      - REPOS=USER/REPO1,USER/REPO2
+      - UPDATE_HOURS=2
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

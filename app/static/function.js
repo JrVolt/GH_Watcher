@@ -56,13 +56,13 @@ async function loadData(){
     const style = getComputedStyle(document.documentElement);
 
     makeChart("clonesChart","Clones",labels,[
-        {label:"Clones", data:data.map(d=>d.clones), borderColor:style.getPropertyValue('--color-clones').trim(), fill:false, tension:0.1, borderDash:[]},
-        {label:"Unique Clones", data:data.map(d=>d.unique_clones), borderColor:style.getPropertyValue('--color-unique-clones').trim(), fill:false, tension:0.1, borderDash:[5,5]}
+        {label:"Clones", data:data.map(d=>d.clones), borderColor:style.getPropertyValue('--color-clones').trim(), fill:false, tension:0.1, borderDash:[25,15]},
+        {label:"Unique Clones", data:data.map(d=>d.unique_clones), borderColor:style.getPropertyValue('--color-unique-clones').trim(), fill:false, tension:0.1, borderDash:[]}
     ]);
 
     makeChart("viewsChart","Views",labels,[
-        {label:"Views", data:data.map(d=>d.views), borderColor:style.getPropertyValue('--color-views').trim(), fill:false, tension:0.1, borderDash:[]},
-        {label:"Unique Views", data:data.map(d=>d.unique_views), borderColor:style.getPropertyValue('--color-unique-views').trim(), fill:false, tension:0.1, borderDash:[5,5]}
+        {label:"Views", data:data.map(d=>d.views), borderColor:style.getPropertyValue('--color-views').trim(), fill:false, tension:0.1, borderDash:[25,15]},
+        {label:"Unique Views", data:data.map(d=>d.unique_views), borderColor:style.getPropertyValue('--color-unique-views').trim(), fill:false, tension:0.1, borderDash:[]}
     ]);
 
     loadReferrers(repo);
@@ -106,19 +106,6 @@ async function loadPaths(repo){
     data.forEach(p=>{
         tbody.innerHTML+=`<tr><td>${p.path}</td><td>${p.count}</td></tr>`;
     });
-}
-
-function exportPDF(){
-    const element = document.querySelector('.container');
-    const opt = {
-        margin: 5,
-        filename: 'github-traffic-report.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    html2pdf().set(opt).from(element).save();
 }
 
 window.onload=()=>{preset(14); loadData();}

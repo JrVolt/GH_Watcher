@@ -12,25 +12,21 @@
         <div class="container">
             <h1>GitHub Traffic Dashboard</h1>
 
-            <div class="card">
+            <div class="card controls">
                 <select id="repo" onchange="loadData()">
                     {% for r in repos %}
                     <option value="{{r}}">{{r}}</option>
                     {% endfor %}
                 </select>
-
+                    <div class="divider"></div>
                 <input type="date" id="start">
                 <input type="date" id="end">
-
+                    <div class="divider"></div>
                 <button onclick="preset(7)">7d</button>
-                <button onclick="preset(14)">14d</button>
                 <button onclick="preset(30)">30d</button>
-                <button onclick="presetMonth()">This Month</button>
-                <button onclick="presetYear()">This Year</button>
-
-                <button onclick="exportPDF()">Export PDF</button>
-
-                <button onclick="toggleTheme()" style="float:right">🌙</button>
+                <button onclick="presetMonth()">Month</button>
+                <button onclick="presetYear()">Year</button>
+                <button class="theme-btn" onclick="toggleTheme()">🌙</button>
             </div>
 
             <div class="grid-2">
@@ -48,32 +44,21 @@
                 </div>
             </div>
 
-            <div class="grid-2"></div>
-                <div class="card">
+            <div class="tables-grid">
+                <div>
                     <h3>Top Referrers</h3>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Referrer</th>
-                                    <th>Views</th>
-                                </tr>
-                            </thead>
-                            <tbody id="referrers"></tbody>
-                        </table>
+                    <table class="data-table">
+                        <thead><tr><th>Referrer</th><th>Views</th></tr></thead>
+                        <tbody id="referrers"></tbody>
+                    </table>
                 </div>
-                <div class="card">
+                <div>
                     <h3>Popular Paths</h3>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Path</th>
-                                    <th>Views</th>
-                                </tr>
-                            </thead>
-                            <tbody id="paths"></tbody>
-                        </table>
+                    <table class="data-table">
+                        <thead><tr><th>Path</th><th>Views</th></tr></thead>
+                        <tbody id="paths"></tbody>
+                    </table>
                 </div>
-
             </div>
 
         </div>

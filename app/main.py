@@ -81,7 +81,13 @@ def fetch_and_store():
 UPDATE_HOURS = int(os.getenv("UPDATE_HOURS", "24"))
 scheduler = BackgroundScheduler()
 scheduler.add_job(fetch_and_store, "interval", hours=UPDATE_HOURS)
-scheduler.start
+scheduler.start()
+
+# Fetch data immediately on startup
+try:
+    fetch_and_store()
+except Exception as e:
+    print(f"Initial fetch failed: {e}")
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
@@ -150,50 +156,3 @@ def fetch_now():
         return {"status": "fetched"}
     except Exception as e:
         return {"error": str(e), "status": "failed"}
-
-# @app.get("/export")
-# def export_pdf(repo: str, start: str, end: str):
-#     db = SessionLocal()
-#     start_date = datetime.fromisoformat(start).date()
-#     end_date = datetime.fromisoformat(end).date()
-
-#     records = db.query(Traffic).filter(
-#         Traffic.repo == repo,
-#         Traffic.date >= start_date,
-#         Traffic.date <= end_date
-#     ).all()
-
-#     buffer = io.BytesIO()
-#     doc = SimpleDocTemplate(buffer, topMargin=0.5*inch, bottomMargin=0.5*inch)
-#     elements = []
-#     styles = getSampleStyleSheet()
-
-#     elements.append(Paragraph(f"<b>GitHub Traffic Report: {repo}</b>", styles["Heading1"]))
-#     elements.append(Paragraph(f"Period: {start} to {end}", styles["Normal"]))
-#     elements.append(Spacer(1, 0.3*inch))
-
-#     table_data = [["Date", "Clones", "Unique", "Views", "Unique"]]
-#     totals = [0, 0, 0, 0]
-#     for r in records:
-#         table_data.append([str(r.date), str(r.clones), str(r.unique_clones), str(r.views), str(r.unique_views)])
-#         totals = [totals[0]+r.clones, totals[1]+r.unique_clones, totals[2]+r.views, totals[3]+r.unique_views]
-    
-#     table_data.append(["TOTAL", str(totals[0]), str(totals[1]), str(totals[2]), str(totals[3])])
-
-#     table = Table(table_data, colWidths=[1.2*inch, 1*inch, 1*inch, 1*inch, 1*inch])
-#     table.setStyle([
-#         ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#238636")),
-#         ("BACKGROUND", (0,-1), (-1,-1), colors.HexColor("#30363d")),
-#         ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
-#         ("ALIGN", (0,0), (-1,-1), "CENTER"),
-#         ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-#         ("FONTSIZE", (0,0), (-1,0), 11),
-#         ("BOTTOMPADDING", (0,0), (-1,0), 12),
-#         ("GRID", (0,0), (-1,-1), 1, colors.HexColor("#30363d"))
-#     ])
-#     elements.append(table)
-#     doc.build(elements)
-#     buffer.seek(0)
-#     db.close()
-
-#     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition":"attachment; filename=report.pdf"})
