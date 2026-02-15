@@ -1,10 +1,10 @@
 import os
 import io
 import requests
-from datetime import datetime
 from datetime import datetime, timedelta
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.orm import declarative_base, sessionmaker
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -39,36 +39,6 @@ headers = {
     "Authorization": f"Bearer {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json"
 }
-
-# def fetch_and_store():
-#     db = SessionLocal()
-#     for repo in REPOS:
-#         clones_url = f"https://api.github.com/repos/{repo}/traffic/clones"
-#         views_url = f"https://api.github.com/repos/{repo}/traffic/views"
-#         ref_url = f"https://api.github.com/repos/{repo}/traffic/popular/referrers"
-
-#         clones_data = requests.get(clones_url, headers=headers).json()
-#         views_data = requests.get(views_url, headers=headers).json()
-
-#         for c in clones_data.get("clones", []):
-#             date = datetime.fromisoformat(c["timestamp"].replace("Z","")).date()
-#             exists = db.query(Traffic).filter_by(repo=repo, date=date).first()
-#             if exists:
-#                 continue
-
-#             v_match = next((v for v in views_data.get("views", []) if v["timestamp"].startswith(str(date))), None)
-
-#             db.add(Traffic(
-#                 repo=repo,
-#                 date=date,
-#                 clones=c["count"],
-#                 unique_clones=c["uniques"],
-#                 views=v_match["count"] if v_match else 0,
-#                 unique_views=v_match["uniques"] if v_match else 0
-#             ))
-
-#     db.commit()
-#     db.close()
 
 def fetch_and_store():
     db = SessionLocal()
@@ -107,11 +77,15 @@ def fetch_and_store():
     
     db.close()
 
+
+UPDATE_HOURS = int(os.getenv("UPDATE_HOURS", "24"))
 scheduler = BackgroundScheduler()
-scheduler.add_job(fetch_and_store, "interval", hours=24)
-scheduler.start()
+scheduler.add_job(fetch_and_store, "interval", hours=UPDATE_HOURS)
+scheduler.start
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+
 templates = Environment(loader=FileSystemLoader("app/templates"))
 
 @app.get("/", response_class=HTMLResponse)
@@ -130,10 +104,8 @@ def get_data(repo: str, start: str, end: str):
         Traffic.date <= end_date
     ).all()
 
-    # Create dict of existing records
     data_dict = {r.date: r for r in records}
     
-    # Fill missing dates with zeros
     result = []
     current = start_date
     while current <= end_date:
@@ -179,41 +151,49 @@ def fetch_now():
     except Exception as e:
         return {"error": str(e), "status": "failed"}
 
-@app.get("/export")
-def export_pdf(repo: str, start: str, end: str):
-    db = SessionLocal()
-    start_date = datetime.fromisoformat(start).date()
-    end_date = datetime.fromisoformat(end).date()
+# @app.get("/export")
+# def export_pdf(repo: str, start: str, end: str):
+#     db = SessionLocal()
+#     start_date = datetime.fromisoformat(start).date()
+#     end_date = datetime.fromisoformat(end).date()
 
-    records = db.query(Traffic).filter(
-        Traffic.repo == repo,
-        Traffic.date >= start_date,
-        Traffic.date <= end_date
-    ).all()
+#     records = db.query(Traffic).filter(
+#         Traffic.repo == repo,
+#         Traffic.date >= start_date,
+#         Traffic.date <= end_date
+#     ).all()
 
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer)
-    elements = []
-    styles = getSampleStyleSheet()
+#     buffer = io.BytesIO()
+#     doc = SimpleDocTemplate(buffer, topMargin=0.5*inch, bottomMargin=0.5*inch)
+#     elements = []
+#     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("GitHub Traffic Report", styles["Title"]))
-    elements.append(Spacer(1, 0.5 * inch))
-    elements.append(Paragraph(f"Repository: {repo}", styles["Normal"]))
-    elements.append(Paragraph(f"Period: {start} - {end}", styles["Normal"]))
-    elements.append(Spacer(1, 0.5 * inch))
+#     elements.append(Paragraph(f"<b>GitHub Traffic Report: {repo}</b>", styles["Heading1"]))
+#     elements.append(Paragraph(f"Period: {start} to {end}", styles["Normal"]))
+#     elements.append(Spacer(1, 0.3*inch))
 
-    table_data = [["Date","Clones","Unique Clones","Views","Unique Views"]]
-    for r in records:
-        table_data.append([str(r.date), r.clones, r.unique_clones, r.views, r.unique_views])
+#     table_data = [["Date", "Clones", "Unique", "Views", "Unique"]]
+#     totals = [0, 0, 0, 0]
+#     for r in records:
+#         table_data.append([str(r.date), str(r.clones), str(r.unique_clones), str(r.views), str(r.unique_views)])
+#         totals = [totals[0]+r.clones, totals[1]+r.unique_clones, totals[2]+r.views, totals[3]+r.unique_views]
+    
+#     table_data.append(["TOTAL", str(totals[0]), str(totals[1]), str(totals[2]), str(totals[3])])
 
-    table = Table(table_data)
-    table.setStyle([("BACKGROUND",(0,0),(-1,0),colors.grey),
-                    ("GRID",(0,0),(-1,-1),1,colors.black)])
+#     table = Table(table_data, colWidths=[1.2*inch, 1*inch, 1*inch, 1*inch, 1*inch])
+#     table.setStyle([
+#         ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#238636")),
+#         ("BACKGROUND", (0,-1), (-1,-1), colors.HexColor("#30363d")),
+#         ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
+#         ("ALIGN", (0,0), (-1,-1), "CENTER"),
+#         ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+#         ("FONTSIZE", (0,0), (-1,0), 11),
+#         ("BOTTOMPADDING", (0,0), (-1,0), 12),
+#         ("GRID", (0,0), (-1,-1), 1, colors.HexColor("#30363d"))
+#     ])
+#     elements.append(table)
+#     doc.build(elements)
+#     buffer.seek(0)
+#     db.close()
 
-    elements.append(table)
-    doc.build(elements)
-    buffer.seek(0)
-    db.close()
-
-    return StreamingResponse(buffer, media_type="application/pdf",
-        headers={"Content-Disposition":"attachment; filename=report.pdf"})
+#     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition":"attachment; filename=report.pdf"})
