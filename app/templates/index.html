@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GitHub Traffic Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+    margin:0;
+    font-family:system-ui;
+    background:#0d1117;
+    color:#c9d1d9;
+    display:flex;
+    justify-content:center;
+}
+.container {
+    width:1200px;
+    padding:30px;
+}
+.card {
+    background:#161b22;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:20px;
+}
+.grid-2 {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+.charts {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+button {
+    background:#238636;
+    color:white;
+    border:none;
+    padding:8px 16px;
+    border-radius:8px;
+    cursor:pointer;
+}
+select,input {
+    background:#0d1117;
+    border:1px solid #30363d;
+    color:#c9d1d9;
+    padding:6px;
+    border-radius:6px;
+}
+.logbox {
+    background:#0d1117;
+    padding:10px;
+    border-radius:8px;
+    font-size:13px;
+    max-height:150px;
+    overflow:auto;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>GitHub Traffic Dashboard</h1>
+
+<div class="card">
+<select id="repo">
+{% for r in repos %}
+<option value="{{r}}">{{r}}</option>
+{% endfor %}
+</select>
+
+<input type="date" id="start">
+<input type="date" id="end">
+
+<button onclick="preset(7)">7d</button>
+<button onclick="preset(30)">30d</button>
+<button onclick="presetMonth()">This Month</button>
+<button onclick="presetYear()">This Year</button>
+
+<button onclick="loadData()">Load</button>
+<button onclick="exportPDF()">Export PDF</button>
+</div>
+
+<div class="grid-2">
+<div class="card">
+<div class="charts">
+<canvas id="clonesChart"></canvas>
+<canvas id="uniqueClonesChart"></canvas>
+<canvas id="viewsChart"></canvas>
+<canvas id="uniqueViewsChart"></canvas>
+</div>
+</div>
+
+
+
+<div class="card">
+<h3>Popular Paths</h3>
+<div id="paths" class="logbox"></div>
+</div>
+
+<div class="card">
+<h3>Top Referrers</h3>
+<div id="referrers" class="logbox"></div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+let charts={};
+
+function format(d){return d.toISOString().split('T')[0];}
+
+function preset(days){
+    let end=new Date();
+    let start=new Date();
+    start.setDate(end.getDate()-days);
+    document.getElementById("start").value=format(start);
+    document.getElementById("end").value=format(end);
+}
+
+function presetMonth(){
+    let now=new Date();
+    let start=new Date(now.getFullYear(),now.getMonth(),1);
+    document.getElementById("start").value=format(start);
+    document.getElementById("end").value=format(now);
+}
+
+function presetYear(){
+    let now=new Date();
+    let start=new Date(now.getFullYear(),0,1);
+    document.getElementById("start").value=format(start);
+    document.getElementById("end").value=format(now);
+}
+
+async function loadData(){
+    const repo=document.getElementById("repo").value;
+    const start=document.getElementById("start").value;
+    const end=document.getElementById("end").value;
+
+    console.log("Fetching:", repo, start, end);
+    const res=await fetch(`/data?repo=${repo}&start=${start}&end=${end}`);
+    const data=await res.json();
+    console.log("Data received:", data);
+    const labels=data.map(d=>d.date);
+
+    console.log("Creating charts...");
+    makeChart("clonesChart","Clones",labels,data.map(d=>d.clones));
+    makeChart("uniqueClonesChart","Unique Clones",labels,data.map(d=>d.unique_clones));
+    makeChart("viewsChart","Views",labels,data.map(d=>d.views));
+    makeChart("uniqueViewsChart","Unique Views",labels,data.map(d=>d.unique_views));
+
+    loadReferrers(repo);
+    loadPaths(repo);
+}
+
+function makeChart(id,label,labels,data){
+    const ctx = document.getElementById(id);
+    if(!ctx) return;
+    
+    if(charts[id]) {
+        charts[id].destroy();
+        delete charts[id];
+    }
+    
+    charts[id] = new Chart(ctx, {
+        type:"line",
+        data:{labels:labels, datasets:[{label:label, data:data, borderColor:"#58a6ff", fill:false, tension:0.1}]},
+        options:{responsive:false, maintainAspectRatio:true}
+    });
+}
+
+async function loadReferrers(repo){
+    const res=await fetch(`/referrers?repo=${repo}`);
+    const data=await res.json();
+    let box=document.getElementById("referrers");
+    box.innerHTML="";
+    if(data.length===0){box.innerHTML="No data";return;}
+    data.forEach(r=>{
+        box.innerHTML+=`${r.referrer} — ${r.count} views<br>`;
+    });
+}
+
+async function loadPaths(repo){
+    const res=await fetch(`/popular-paths?repo=${repo}`);
+    const data=await res.json();
+    let box=document.getElementById("paths");
+    box.innerHTML="";
+    if(!data || data.length===0){box.innerHTML="No data";return;}
+    data.forEach(p=>{
+        box.innerHTML+=`${p.path} — ${p.count} views<br>`;
+    });
+}
+
+function exportPDF(){
+    const repo=document.getElementById("repo").value;
+    const start=document.getElementById("start").value;
+    const end=document.getElementById("end").value;
+    window.location=`/export?repo=${repo}&start=${start}&end=${end}`;
+}
+
+//window.onload=()=>preset(14);
+window.onload=()=>{preset(14); loadData();}
+</script>
+
+</body>
+</html>
