@@ -20,12 +20,13 @@
                     {% endfor %}
                 </select>
                     <div class="divider"></div>
-                <input type="date" id="start">
-                <input type="date" id="end">
+                <input type="date" id="start" onchange="loadData()">
+                <input type="date" id="end" onchange="loadData()">
                     <div class="divider"></div>
                 <button onclick="preset(7)">7d</button>
-                <button onclick="preset(30)">14d</button>
+                <button onclick="preset(14)">14d</button>
                 <button onclick="preset(30)">30d</button>
+                <button onclick="preset(60)">60d</button>
                 <button onclick="presetMonth()">Month</button>
                 <button onclick="presetYear()">Year</button>
                 <button class="theme-btn" onclick="toggleTheme()">🌙</button>
