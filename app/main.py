@@ -3,7 +3,7 @@ import io
 import requests
 from datetime import datetime, timedelta
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, Column, Integer, String, Date, func, desc
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -22,6 +22,12 @@ Base = declarative_base()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REPOS = [r.strip() for r in os.getenv("REPOS", "").split(",") if r.strip()]
+
+headers = {
+    "Accept": "application/vnd.github+json"
+}
+if GITHUB_TOKEN:
+    headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
 
 class Traffic(Base):
     __tablename__ = "traffic"
@@ -52,11 +58,6 @@ class PathTraffic(Base):
     uniques = Column(Integer)
 
 Base.metadata.create_all(bind=engine)
-
-headers = {
-    "Authorization": f"Bearer {GITHUB_TOKEN}",
-    "Accept": "application/vnd.github+json"
-}
 
 def fetch_and_store():
     db = SessionLocal()
@@ -268,73 +269,117 @@ def get_summary(repo: str, start: str, end: str):
         }
     }
 
+
+def fetch_github_list(url):
+    response = requests.get(url, headers=headers)
+    try:
+        data = response.json()
+    except ValueError:
+        text = response.text.strip()
+        print(f"[fetch_github_list] invalid JSON from {url}, status={response.status_code}, body={text[:200]}")
+        return None
+    if not response.ok:
+        print(f"[fetch_github_list] {url} failed: {response.status_code}, response={data}")
+        return None
+    return data
+
 @app.get("/referrers")
 def get_referrers(repo: str, start: str = None, end: str = None):
     db = SessionLocal()
+    query = db.query(
+        ReferrerTraffic.referrer,
+        func.coalesce(func.sum(ReferrerTraffic.count), 0).label("count"),
+        func.coalesce(func.sum(ReferrerTraffic.uniques), 0).label("uniques")
+    ).filter(ReferrerTraffic.repo == repo)
+
     if start and end:
         start_date = datetime.fromisoformat(start).date()
         end_date = datetime.fromisoformat(end).date()
-        rows = db.query(
-            ReferrerTraffic.referrer,
-            func.coalesce(func.sum(ReferrerTraffic.count), 0).label("count"),
-            func.coalesce(func.sum(ReferrerTraffic.uniques), 0).label("uniques")
-        ).filter(
-            ReferrerTraffic.repo == repo,
+        query = query.filter(
             ReferrerTraffic.date >= start_date,
             ReferrerTraffic.date <= end_date
-        ).group_by(ReferrerTraffic.referrer).order_by(desc("count")).all()
-        if rows:
-            db.close()
-            return [
-                {"referrer": r.referrer, "count": int(r.count), "uniques": int(r.uniques)}
-                for r in rows
-            ]
+        )
+
+    rows = query.group_by(ReferrerTraffic.referrer).order_by(desc("count")).all()
+    if rows:
+        result = [
+            {"referrer": r.referrer, "count": int(r.count), "uniques": int(r.uniques)}
+            for r in rows
+        ]
         db.close()
-        url = f"https://api.github.com/repos/{repo}/traffic/popular/referrers"
-        data = requests.get(url, headers=headers).json()
+        return result
+
+    url = f"https://api.github.com/repos/{repo}/traffic/popular/referrers"
+    data = fetch_github_list(url)
+    if data and isinstance(data, dict):
+        fetch_date = datetime.utcnow().date()
+        if not db.query(ReferrerTraffic).filter_by(repo=repo, date=fetch_date).first():
+            for r in data.get("referrers", []):
+                db.add(ReferrerTraffic(
+                    repo=repo,
+                    date=fetch_date,
+                    referrer=r.get("referrer"),
+                    count=r.get("count", 0),
+                    uniques=r.get("uniques", 0)
+                ))
+            db.commit()
+        db.close()
         return [
             {"referrer": r.get("referrer"), "count": r.get("count", 0), "uniques": r.get("uniques", 0)}
             for r in data.get("referrers", [])
         ]
 
-    url = f"https://api.github.com/repos/{repo}/traffic/popular/referrers"
-    data = requests.get(url, headers=headers).json()
     db.close()
-    return JSONResponse(content=data)
+    return []
 
 @app.get("/popular-paths")
 def get_popular_paths(repo: str, start: str = None, end: str = None):
     db = SessionLocal()
+    query = db.query(
+        PathTraffic.path,
+        func.coalesce(func.sum(PathTraffic.count), 0).label("count"),
+        func.coalesce(func.sum(PathTraffic.uniques), 0).label("uniques")
+    ).filter(PathTraffic.repo == repo)
+
     if start and end:
         start_date = datetime.fromisoformat(start).date()
         end_date = datetime.fromisoformat(end).date()
-        rows = db.query(
-            PathTraffic.path,
-            func.coalesce(func.sum(PathTraffic.count), 0).label("count"),
-            func.coalesce(func.sum(PathTraffic.uniques), 0).label("uniques")
-        ).filter(
-            PathTraffic.repo == repo,
+        query = query.filter(
             PathTraffic.date >= start_date,
             PathTraffic.date <= end_date
-        ).group_by(PathTraffic.path).order_by(desc("count")).all()
-        if rows:
-            db.close()
-            return [
-                {"path": r.path, "count": int(r.count), "uniques": int(r.uniques)}
-                for r in rows
-            ]
+        )
+
+    rows = query.group_by(PathTraffic.path).order_by(desc("count")).all()
+    if rows:
+        result = [
+            {"path": r.path, "count": int(r.count), "uniques": int(r.uniques)}
+            for r in rows
+        ]
         db.close()
-        url = f"https://api.github.com/repos/{repo}/traffic/popular/paths"
-        data = requests.get(url, headers=headers).json()
+        return result
+
+    url = f"https://api.github.com/repos/{repo}/traffic/popular/paths"
+    data = fetch_github_list(url)
+    if data and isinstance(data, dict):
+        fetch_date = datetime.utcnow().date()
+        if not db.query(PathTraffic).filter_by(repo=repo, date=fetch_date).first():
+            for p in data.get("paths", []):
+                db.add(PathTraffic(
+                    repo=repo,
+                    date=fetch_date,
+                    path=p.get("path"),
+                    count=p.get("count", 0),
+                    uniques=p.get("uniques", 0)
+                ))
+            db.commit()
+        db.close()
         return [
             {"path": p.get("path"), "count": p.get("count", 0), "uniques": p.get("uniques", 0)}
             for p in data.get("paths", [])
         ]
 
-    url = f"https://api.github.com/repos/{repo}/traffic/popular/paths"
-    data = requests.get(url, headers=headers).json()
     db.close()
-    return JSONResponse(content=data)
+    return []
 
 @app.post("/fetch-now")
 def fetch_now():

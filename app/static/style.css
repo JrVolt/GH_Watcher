@@ -1,15 +1,17 @@
 body {
-    margin:0;
-    font-family:system-ui;
-    background:#0d1117;
-    color:#c9d1d9;
-    display:flex;
-    justify-content:center;
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
 }
 
 .container {
-    width:1200px;
-    padding:30px;
+    width: min(1200px, 100%);
+    padding: 30px;
 }
 
 .card {
@@ -162,7 +164,7 @@ input[type="date"]::-moz-calendar-picker-indicator {
 }
 
 .charts {
-    display:block;
+    display: block;
 }
 
 .charts canvas {
@@ -171,9 +173,9 @@ input[type="date"]::-moz-calendar-picker-indicator {
 }
 
 .data-table {
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
 }
 
 .data-table thead th:first-child {
@@ -200,6 +202,10 @@ input[type="date"]::-moz-calendar-picker-indicator {
     --color-unique-clones: #fdf327;
     --color-views: #ff5338;
     --color-unique-views: #a9ff38;
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --text: #c9d1d9;
+    --border: #30363d;
 }
 
 :root[data-theme="dark"] {

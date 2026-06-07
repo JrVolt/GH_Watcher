@@ -48,12 +48,13 @@ async function loadData(){
     const repo=document.getElementById("repo").value;
     const start=document.getElementById("start").value;
     const end=document.getElementById("end").value;
-    const res=await fetch(`/data?repo=${repo}&start=${start}&end=${end}`);
+    const encodedRepo = encodeURIComponent(repo);
+    const res=await fetch(`/data?repo=${encodedRepo}&start=${start}&end=${end}`);
     const data=await res.json();
     const labels=data.map(d=>d.date);
     const style = getComputedStyle(document.documentElement);
 
-    const summaryRes = await fetch(`/summary?repo=${repo}&start=${start}&end=${end}`);
+    const summaryRes = await fetch(`/summary?repo=${encodedRepo}&start=${start}&end=${end}`);
     const summary = await summaryRes.json();
     document.getElementById("total-downloads").textContent = summary.range.clones;
     document.getElementById("total-views").textContent = summary.range.views;
@@ -93,30 +94,66 @@ function makeChart(id,label,labels,datasets){
     });
 }
 
+function setTableMessage(tbody, message){
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#8b98a6;">${message}</td></tr>`;
+}
+
+async function requestJson(url){
+    const res = await fetch(url);
+    let data;
+    try {
+        data = await res.json();
+    } catch (error) {
+        const text = await res.clone().text();
+        throw new Error(`HTTP ${res.status}: ${text.trim().slice(0, 200)}`);
+    }
+    if (!res.ok || data?.error || data?.message) {
+        const message = data?.message || data?.error || `${res.status} ${res.statusText}`;
+        throw new Error(message);
+    }
+    return data;
+}
+
 async function loadReferrers(repo){
     const start=document.getElementById("start").value;
     const end=document.getElementById("end").value;
-    const res=await fetch(`/referrers?repo=${repo}&start=${start}&end=${end}`);
-    const data=await res.json();
-    let tbody=document.getElementById("referrers");
-    tbody.innerHTML="";
-    if(!data || data.length===0){tbody.innerHTML="<tr><td colspan=2>No data</td></tr>";return;}
-    data.forEach(r=>{
-        tbody.innerHTML+=`<tr><td>${r.referrer}</td><td>${r.count}</td></tr>`;
-    });
+    const encodedRepo = encodeURIComponent(repo);
+    const tbody=document.getElementById("referrers");
+    try {
+        const data = await requestJson(`/referrers?repo=${encodedRepo}&start=${start}&end=${end}`);
+        if(!Array.isArray(data) || data.length===0){
+            setTableMessage(tbody, "No referrer data available");
+            return;
+        }
+        tbody.innerHTML = "";
+        data.forEach(r=>{
+            tbody.innerHTML+=`<tr><td>${r.referrer}</td><td>${r.count}</td></tr>`;
+        });
+    } catch (error) {
+        console.error(error);
+        setTableMessage(tbody, error.message || "Unable to load referrer data");
+    }
 }
 
 async function loadPaths(repo){
     const start=document.getElementById("start").value;
     const end=document.getElementById("end").value;
-    const res=await fetch(`/popular-paths?repo=${repo}&start=${start}&end=${end}`);
-    const data=await res.json();
-    let tbody=document.getElementById("paths");
-    tbody.innerHTML="";
-    if(!data || data.length===0){tbody.innerHTML="<tr><td colspan=2>No data</td></tr>";return;}
-    data.forEach(p=>{
-        tbody.innerHTML+=`<tr><td>${p.path}</td><td>${p.count}</td></tr>`;
-    });
+    const encodedRepo = encodeURIComponent(repo);
+    const tbody=document.getElementById("paths");
+    try {
+        const data = await requestJson(`/popular-paths?repo=${encodedRepo}&start=${start}&end=${end}`);
+        if(!Array.isArray(data) || data.length===0){
+            setTableMessage(tbody, "No popular path data available");
+            return;
+        }
+        tbody.innerHTML = "";
+        data.forEach(p=>{
+            tbody.innerHTML+=`<tr><td>${p.path}</td><td>${p.count}</td></tr>`;
+        });
+    } catch (error) {
+        console.error(error);
+        setTableMessage(tbody, error.message || "Unable to load path data");
+    }
 }
 
 window.onload=()=>{
@@ -126,6 +163,5 @@ window.onload=()=>{
         repoSelect.value = selectedRepo;
     }
     preset(14);
-    loadData();
 }
 
