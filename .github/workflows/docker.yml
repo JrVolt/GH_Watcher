@@ -2,13 +2,8 @@ name: Build and publish Docker image
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
-      - '*'
-      - '*.*'
-      - '*.*.*'
   workflow_dispatch:
 
 jobs:
@@ -32,11 +27,12 @@ jobs:
       - name: Determine Docker image tags
         id: image-tags
         run: |
-          tags="jrvolt/gh_watcher:latest jrvolt/gh_watcher:${GITHUB_SHA}"
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             ref_name="${GITHUB_REF#refs/tags/}"
             docker_tag="${ref_name#v}"
-            tags="jrvolt/gh_watcher:${docker_tag} jrvolt/gh_watcher:latest jrvolt/gh_watcher:${GITHUB_SHA}"
+            tags="jrvolt/gh_watcher:${docker_tag} jrvolt/gh_watcher:latest"
+          else
+            tags="jrvolt/gh_watcher:latest"
           fi
           printf '%s\n' $tags > /tmp/docker-tags
           echo "tags<<EOF" >> "$GITHUB_OUTPUT"
