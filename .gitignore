@@ -4,4 +4,7 @@ REL_docker-compose.yml
 DEV-docker-compose.yml
 REL-docker-compose.yml
 data/
-data/*
+__pycache__/
+*.pyc
+*.pyo
+.venv/
