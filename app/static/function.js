@@ -28,6 +28,14 @@ function presetYear(){
     loadData();
 }
 
+function presetAll(){
+    const firstDate = document.getElementById("repo-first-date").value;
+    const now = new Date();
+    document.getElementById("start").value = firstDate || "2000-01-01";
+    document.getElementById("end").value = format(now);
+    loadData();
+}
+
 function getQueryParam(name){
     const params = new URLSearchParams(window.location.search);
     return params.get(name);
@@ -100,16 +108,23 @@ function setTableMessage(tbody, message){
 
 async function requestJson(url){
     const res = await fetch(url);
+    const text = await res.text();
     let data;
-    try {
-        data = await res.json();
-    } catch (error) {
-        const text = await res.clone().text();
-        throw new Error(`HTTP ${res.status}: ${text.trim().slice(0, 200)}`);
+
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch (error) {
+            throw new Error(`HTTP ${res.status}: ${text.trim().slice(0, 200)}`);
+        }
     }
-    if (!res.ok || data?.error || data?.message) {
-        const message = data?.message || data?.error || `${res.status} ${res.statusText}`;
-        throw new Error(message);
+
+    if (!res.ok) {
+        const message = data?.detail || data?.message || data?.error || `${res.status} ${res.statusText}`;
+        throw new Error(`HTTP ${res.status}: ${message}`);
+    }
+    if (data?.error || data?.message || data?.detail) {
+        throw new Error(data.detail || data.message || data.error);
     }
     return data;
 }
@@ -162,6 +177,16 @@ window.onload=()=>{
     if (repoSelect && selectedRepo) {
         repoSelect.value = selectedRepo;
     }
-    preset(14);
+
+    const firstDate = document.getElementById("repo-first-date").value;
+    const end = new Date();
+    document.getElementById("end").value = format(end);
+    if (firstDate) {
+        document.getElementById("start").value = firstDate;
+    } else {
+        presetYear();
+        return;
+    }
+    loadData();
 }
 
