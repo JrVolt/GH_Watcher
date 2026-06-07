@@ -1,12 +1,4 @@
 
-function toggleTheme(){
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    document.querySelector('button[onclick="toggleTheme()"]').textContent = next === 'dark' ? '🌙' : '☀️';
-}
-
 let charts={};
 
 function format(d){return d.toISOString().split('T')[0];}
@@ -36,14 +28,20 @@ function presetYear(){
     loadData();
 }
 
-function getColors() {
-    const style = getComputedStyle(document.documentElement);
-    return {
-        clones: style.getPropertyValue('--color-clones').trim(),
-        uniqueClones: style.getPropertyValue('--color-unique-clones').trim(),
-        views: style.getPropertyValue('--color-views').trim(),
-        uniqueViews: style.getPropertyValue('--color-unique-views').trim()
-    };
+function getQueryParam(name){
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+function onRepoChange(){
+    const repo = document.getElementById("repo").value;
+    if (window.location.pathname === '/repo') {
+        const newUrl = `/repo?repo=${encodeURIComponent(repo)}`;
+        window.history.replaceState(null, '', newUrl);
+        loadData();
+    } else {
+        window.location.href = `/repo?repo=${encodeURIComponent(repo)}`;
+    }
 }
 
 async function loadData(){
@@ -54,6 +52,15 @@ async function loadData(){
     const data=await res.json();
     const labels=data.map(d=>d.date);
     const style = getComputedStyle(document.documentElement);
+
+    const summaryRes = await fetch(`/summary?repo=${repo}&start=${start}&end=${end}`);
+    const summary = await summaryRes.json();
+    document.getElementById("total-downloads").textContent = summary.range.clones;
+    document.getElementById("total-views").textContent = summary.range.views;
+    document.getElementById("first-date").textContent = summary.first_date || "—";
+    document.getElementById("tracked-days").textContent = summary.tracked_days;
+    document.getElementById("best-day-count").textContent = summary.best_day.clones ?? 0;
+    document.getElementById("best-day-date").textContent = summary.best_day.date || "—";
 
     makeChart("clonesChart","Clones",labels,[
         {label:"Clones", data:data.map(d=>d.clones), borderColor:style.getPropertyValue('--color-clones').trim(), fill:false, tension:0.1, borderDash:[25,15]},
@@ -87,7 +94,9 @@ function makeChart(id,label,labels,datasets){
 }
 
 async function loadReferrers(repo){
-    const res=await fetch(`/referrers?repo=${repo}`);
+    const start=document.getElementById("start").value;
+    const end=document.getElementById("end").value;
+    const res=await fetch(`/referrers?repo=${repo}&start=${start}&end=${end}`);
     const data=await res.json();
     let tbody=document.getElementById("referrers");
     tbody.innerHTML="";
@@ -98,7 +107,9 @@ async function loadReferrers(repo){
 }
 
 async function loadPaths(repo){
-    const res=await fetch(`/popular-paths?repo=${repo}`);
+    const start=document.getElementById("start").value;
+    const end=document.getElementById("end").value;
+    const res=await fetch(`/popular-paths?repo=${repo}&start=${start}&end=${end}`);
     const data=await res.json();
     let tbody=document.getElementById("paths");
     tbody.innerHTML="";
@@ -108,5 +119,13 @@ async function loadPaths(repo){
     });
 }
 
-window.onload=()=>{preset(14); loadData();}
+window.onload=()=>{
+    const selectedRepo = getQueryParam('repo');
+    const repoSelect = document.getElementById('repo');
+    if (repoSelect && selectedRepo) {
+        repoSelect.value = selectedRepo;
+    }
+    preset(14);
+    loadData();
+}
 

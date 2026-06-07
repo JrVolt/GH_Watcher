@@ -3,68 +3,48 @@
     <head>
         <meta charset="UTF-8">
         <title>GitHub Traffic Monitor</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-        <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
         <link rel="stylesheet" href="/static/style.css">
         <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     </head>
     <body>
         <div class="container">
-            <h1>GitHub Traffic Dashboard</h1>
-
-            <div class="card controls">
-                <select id="repo" onchange="loadData()">
-                    {% for r in repos %}
-                    <option value="{{r}}">{{r}}</option>
-                    {% endfor %}
-                </select>
-                    <div class="divider"></div>
-                <input type="date" id="start" onchange="loadData()">
-                <input type="date" id="end" onchange="loadData()">
-                    <div class="divider"></div>
-                <button onclick="preset(7)">7d</button>
-                <button onclick="preset(14)">14d</button>
-                <button onclick="preset(30)">30d</button>
-                <button onclick="preset(60)">60d</button>
-                <button onclick="presetMonth()">Month</button>
-                <button onclick="presetYear()">Year</button>
-                <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+            <div class="card" align="center">
+                <h1>Watched Repositories</h1>
+                <p>Track your repo stats and switch views instantly,</p>
             </div>
 
-            <div class="grid-2">
-                <div class="card">
-                    <h3>Clone</h3>
-                    <div class="charts">
-                        <canvas id="clonesChart" style="max-height:300px;"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3>Views</h3>
-                    <div class="charts">
-                        <canvas id="viewsChart" style="max-height:300px;"></canvas>
-                    </div>
-                </div>
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Repository</th>
+                            <th>First tracked</th>
+                            <th>Days tracked</th>
+                            <th>All-time clones</th>
+                            <th>All-time views</th>
+                            <th>Best day clones</th>
+                            <th>Latest day clones</th>
+                            <th>Latest day views</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for summary in repo_summaries %}
+                        <tr>
+                            <td><a class="repo-link" href="/repo?repo={{ summary.repo }}">{{ summary.repo }}</a></td>
+                            <td>{{ summary.first_date or '—' }}</td>
+                            <td>{{ summary.days_tracked }}</td>
+                            <td>{{ summary.total_clones }}</td>
+                            <td>{{ summary.total_views }}</td>
+                            <td>{{ summary.best_clones }}</td>
+                            <td>{{ summary.latest_clones }}</td>
+                            <td>{{ summary.latest_views }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8">No monitored repositories configured.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-
-            <div class="tables-grid">
-                <div>
-                    <h3>Top Referrers</h3>
-                    <table class="data-table">
-                        <thead><tr><th>Referrer</th><th>Views</th></tr></thead>
-                        <tbody id="referrers"></tbody>
-                    </table>
-                </div>
-                <div>
-                    <h3>Popular Paths</h3>
-                    <table class="data-table">
-                        <thead><tr><th>Path</th><th>Views</th></tr></thead>
-                        <tbody id="paths"></tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
-        <script src="/static/function.js"></script>
     </body>
 </html>
