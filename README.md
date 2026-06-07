@@ -1,5 +1,8 @@
 # GitHub Traffic Monitor
 
+![Screenshot](IMG/Index.png)
+
+
 ![Screenshot](IMG/Dashboard.png)
 
 A self-hosted web dashboard to monitor GitHub repository traffic metrics including clones, views, popular referrers, and popular paths. Like Github but with more historical data.
