@@ -1,7 +1,12 @@
 # GitHub Traffic Monitor
 
+## Main page 
+Overall and repo list
+
 ![Screenshot](IMG/Index.png)
 
+## Repo Details
+Dashboard for single watched repo
 
 ![Screenshot](IMG/Dashboard.png)
 
@@ -17,21 +22,20 @@ A self-hosted web dashboard to monitor GitHub repository traffic metrics includi
 - 🌓 Dark/Light theme toggle
 - 🔄 Automatic background data fetching on configurable intervals
 
-## Requirements
-
-- Docker & Docker Compose
-- GitHub Personal Access Token (with `repo` scope for traffic data access)
 
 ## Quick Start
 
-### Option 1: Using Pre-built Docker Image
+**Required:**
+GitHub Personal Access Token (for traffic data access)
+
+###Pre-built Docker Image
 
 1. using `SAMPLE_docker-compose.yml`:
 
 2. Configure environment variables:
    - `GITHUB_TOKEN`: Your GitHub personal access token
    - `REPOS`: Comma-separated list of repositories (format: `owner/repo`)
-   - `UPDATE_HOURS`: Hours between automatic data fetches (default: 24)
+   - `UPDATE_HOURS`: Hours between automatic data fetches (default: 6)
 
 3. Start the container:
 
@@ -40,7 +44,6 @@ docker-compose up -d
 ```
 
 4. Access the dashboard at `http://localhost:8000`
-
 
 ### Getting a GitHub Token
 
@@ -66,15 +69,9 @@ curl -X POST http://localhost:8000/fetch-now
 
 The app fetches data immediately on startup. If data doesn't appear:
 1. Check logs: `docker logs GH_Watcher`
-2. Verify `GITHUB_TOKEN` is valid
+2. Verify `GITHUB_TOKEN` is valid or not expired
 3. Verify `REPOS` format is correct: `owner/repo`
 4. Manually trigger fetch: `curl -X POST http://localhost:8000/fetch-now`
-
-### Token errors
-
-- Ensure token has right permission
-- Check token hasn't expired
-- Verify token in `docker-compose.yml` has no extra spaces
 
 
 ## License

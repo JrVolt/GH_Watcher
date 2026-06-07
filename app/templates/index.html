@@ -8,9 +8,23 @@
     </head>
     <body>
         <div class="container">
-            <div class="card" align="center">
-                <h1>Watched Repositories</h1>
-                <p>Track your repo stats and switch views instantly,</p>
+            <div class="card top-card" align="center">
+                <div class="top-card-header" align="center">
+                    <div>
+                        <h1>Watched Repositories</h1>
+                        <p>Track your repo stats and switch views instantly</p>
+                    </div>
+                    <div class="top-card-right">
+                        <div class="update-block">
+                            <div id="update-interval">Update every {{ update_interval_hours }}h</div>
+                            <div id="update-countdown">Update in loading...</div>
+                        </div>
+                        <div class="top-card-actions">
+                            <button id="fetch-now-button" onclick="fetchNow()">Fetch now</button>
+                            <span id="fetch-status" class="fetch-status"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -23,8 +37,8 @@
                             <th>All-time clones</th>
                             <th>All-time views</th>
                             <th>Best clone day</th>
-                            <th>Today clones</th>
-                            <th>Today views</th>
+                            <th>Latest clones</th>
+                            <th>Latest views</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,5 +60,73 @@
                 </table>
             </div>
         </div>
+        <div id="fetch-overlay" class="fetch-overlay hidden" aria-hidden="true">
+            <div class="fetch-overlay-content">
+                <div class="spinner"></div>
+                <div>Fetching latest data...</div>
+            </div>
+        </div>
+        <script>
+            const nextUpdateTime = "{{ next_update or '' }}";
+
+            function showOverlay() {
+                const overlay = document.getElementById('fetch-overlay');
+                overlay.classList.remove('hidden');
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+
+            function hideOverlay() {
+                const overlay = document.getElementById('fetch-overlay');
+                overlay.classList.add('hidden');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+
+            async function fetchNow() {
+                const button = document.getElementById('fetch-now-button');
+                const status = document.getElementById('fetch-status');
+                button.disabled = true;
+                showOverlay();
+                status.textContent = 'Fetching...';
+                try {
+                    const response = await fetch('/fetch-now', { method: 'POST' });
+                    const data = await response.json();
+                    if (!response.ok || data.status !== 'fetched') {
+                        throw new Error(data.error || data.detail || `Fetch failed (${response.status})`);
+                    }
+                    status.textContent = 'Fetch completed. Reloading...';
+                    window.location.reload();
+                } catch (error) {
+                    status.textContent = `Fetch failed: ${error.message}`;
+                    hideOverlay();
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            function updateCountdown() {
+                const countdown = document.getElementById('update-countdown');
+                if (!nextUpdateTime) {
+                    countdown.textContent = 'Next update soon';
+                    return;
+                }
+                const target = new Date(nextUpdateTime);
+                const now = new Date();
+                const delta = target - now;
+                if (delta <= 0) {
+                    countdown.textContent = 'Next update imminent';
+                    return;
+                }
+                const seconds = Math.floor(delta / 1000);
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                countdown.textContent = `Next update in ${hours}h ${minutes}m ${secs}s`;
+            }
+
+            window.addEventListener('load', () => {
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            });
+        </script>
     </body>
 </html>

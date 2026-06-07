@@ -166,10 +166,9 @@ def get_repo_overviews():
     ).group_by(Traffic.repo).all()
 
     overviews = []
+    today = datetime.utcnow().date()
     for row in rows:
-        latest = None
-        if row.latest_date:
-            latest = db.query(Traffic).filter(Traffic.repo == row.repo, Traffic.date == row.latest_date).first()
+        today_record = db.query(Traffic).filter(Traffic.repo == row.repo, Traffic.date == today).first()
         best_day = db.query(Traffic).filter(Traffic.repo == row.repo).order_by(desc(Traffic.clones)).first()
         day_count = 0
         if row.first_date and row.latest_date:
@@ -180,16 +179,30 @@ def get_repo_overviews():
             "total_views": int(row.total_views),
             "first_date": str(row.first_date) if row.first_date else None,
             "days_tracked": int(day_count),
-            "latest_clones": int(latest.clones) if latest else 0,
-            "latest_views": int(latest.views) if latest else 0,
+            "latest_clones": int(today_record.clones) if today_record else 0,
+            "latest_views": int(today_record.views) if today_record else 0,
             "best_clones": f"{best_day.date} ({best_day.clones})" if best_day else "—"
         })
     db.close()
     return overviews
 
+def get_next_update_time():
+    jobs = scheduler.get_jobs()
+    if jobs:
+        next_run = jobs[0].next_run_time
+        if next_run:
+            return next_run.isoformat()
+    return None
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return templates.get_template("index.html").render(repo_summaries=get_repo_overviews())
+    return templates.get_template("index.html").render(
+        repo_summaries=get_repo_overviews(),
+        update_interval_hours=UPDATE_HOURS,
+        next_update=get_next_update_time()
+    )
+
 
 def get_repo_date_range(repo: str):
     db = SessionLocal()
@@ -302,9 +315,7 @@ def get_summary(repo: str, start: str, end: str):
     first_date = db.query(func.min(Traffic.date)).filter(Traffic.repo == repo).scalar()
     latest_date = db.query(func.max(Traffic.date)).filter(Traffic.repo == repo).scalar()
     best_day = db.query(Traffic.date, Traffic.clones).filter(
-        Traffic.repo == repo,
-        Traffic.date >= start_date,
-        Traffic.date <= end_date
+        Traffic.repo == repo
     ).order_by(desc(Traffic.clones)).first()
     db.close()
 

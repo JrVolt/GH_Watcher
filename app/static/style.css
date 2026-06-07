@@ -36,6 +36,111 @@ button:hover {
     background: #1d7d7f;
 }
 
+.top-card {
+    position: relative;
+}
+
+.top-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.update-block {
+    text-align: right;
+    font-size: 0.95rem;
+    color: #9cc;
+}
+
+.update-block div {
+    line-height: 1.4;
+}
+
+.top-card-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.top-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+@media (max-width: 700px) {
+    .top-card-right {
+        width: 100%;
+        justify-content: center;
+    }
+    .top-card-actions {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+#fetch-now-button {
+    background-color: #ff8c42 !important;
+    color: #0d1117 !important;
+    border: 1px solid rgba(0,0,0,0.12);
+}
+
+#fetch-now-button:hover {
+    background-color: #ff9f5d !important;
+}
+
+.fetch-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 17, 23, 0.78);
+    padding: 20px;
+}
+
+.fetch-overlay.hidden {
+    display: none;
+}
+
+.fetch-overlay-content {
+    background: rgba(15, 20, 27, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 24px 28px;
+    text-align: center;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    min-width: 240px;
+}
+
+.fetch-overlay-content div {
+    margin-top: 12px;
+    font-size: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.18);
+    border-top-color: #ff8c42;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 select, input {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -107,10 +212,20 @@ input[type="date"]::-moz-calendar-picker-indicator {
     color: var(--color-views);
 }
 
+.best-day-card .stat-subtext {
+    font-size: 0.8rem;
+}
+
 .stat-subtext {
     font-size: 0.9rem;
     color: #8b98a6;
     margin-top: 4px;
+}
+
+.fetch-status {
+    margin-left: 12px;
+    color: rgb(204, 187, 153);
+    font-size: 0.95rem;
 }
 
 .global-summary {

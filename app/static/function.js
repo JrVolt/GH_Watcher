@@ -3,29 +3,29 @@ let charts={};
 
 function format(d){return d.toISOString().split('T')[0];}
 
+function setRange(start, end) {
+    document.getElementById("start").value = format(start);
+    document.getElementById("end").value = format(end);
+    loadData();
+}
+
 function preset(days){
     let end=new Date();
     let start=new Date();
-    start.setDate(end.getDate()-days);
-    document.getElementById("start").value=format(start);
-    document.getElementById("end").value=format(end);
-    loadData();
+    start.setDate(end.getDate() - (days - 1));
+    setRange(start, end);
 }
 
 function presetMonth(){
     let now=new Date();
     let start=new Date(now.getFullYear(),now.getMonth(),1);
-    document.getElementById("start").value=format(start);
-    document.getElementById("end").value=format(now);
-    loadData();
+    setRange(start, now);
 }
 
 function presetYear(){
     let now=new Date();
     let start=new Date(now.getFullYear(),0,1);
-    document.getElementById("start").value=format(start);
-    document.getElementById("end").value=format(now);
-    loadData();
+    setRange(start, now);
 }
 
 function presetAll(){
