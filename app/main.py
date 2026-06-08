@@ -168,7 +168,7 @@ def get_repo_overviews():
     overviews = []
     today = datetime.utcnow().date()
     for row in rows:
-        today_record = db.query(Traffic).filter(Traffic.repo == row.repo, Traffic.date == today).first()
+        latest_record = db.query(Traffic).filter(Traffic.repo == row.repo, Traffic.date == row.latest_date).first()
         best_day = db.query(Traffic).filter(Traffic.repo == row.repo).order_by(desc(Traffic.clones)).first()
         day_count = 0
         if row.first_date and row.latest_date:
@@ -179,8 +179,8 @@ def get_repo_overviews():
             "total_views": int(row.total_views),
             "first_date": str(row.first_date) if row.first_date else None,
             "days_tracked": int(day_count),
-            "latest_clones": int(today_record.clones) if today_record else 0,
-            "latest_views": int(today_record.views) if today_record else 0,
+            "latest_clones": int(latest_record.clones) if latest_record else 0,
+            "latest_views": int(latest_record.views) if latest_record else 0,
             "best_clones": f"{best_day.date} ({best_day.clones})" if best_day else "—"
         })
     db.close()
