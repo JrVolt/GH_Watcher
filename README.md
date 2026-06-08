@@ -28,7 +28,7 @@ A self-hosted web dashboard to monitor GitHub repository traffic metrics includi
 **Required:**
 GitHub Personal Access Token (for traffic data access)
 
-###Pre-built Docker Image
+### Pre-built Docker Image
 
 1. using `SAMPLE_docker-compose.yml`:
 
